@@ -42,7 +42,7 @@ onBeforeMount(async () => {
 
 // websocket
 const initWebSocket = () => {
-  ws = new WebSocket(`ws://127.0.0.1:6503/conn/${data.account.id}`);
+  ws = new WebSocket(`ws://127.0.0.1:1108/conn/${data.account.id}`);
 
   ws.onopen = (e: Event) => {
     setInterval(() => {
@@ -56,25 +56,33 @@ const initWebSocket = () => {
   };
 
   ws.onmessage = async (e: MessageEvent) => {
+    console.log("📩 [Клиент] Получено WebSocket сообщение:", e.data);
+
     const msg: Record<string, any> = JSON.parse(e.data);
     switch (msg.msg_type) {
-      case MessageType.VIDEO_OFFER: // Invitation and offer to chat
+      case MessageType.VIDEO_OFFER:
+        console.log("🎥 Получено VIDEO_OFFER!");
         handleVideoOfferMsg(msg);
         break;
-      case MessageType.VIDEO_ANSWER: // Callee has answered our offer
+      case MessageType.VIDEO_ANSWER:
+        console.log("✅ Получено VIDEO_ANSWER!");
         handleVideoAnswerMsg(msg);
         break;
-      case MessageType.NEW_ICE_CANDIDATE: // A new ICE candidate has been received
+      case MessageType.NEW_ICE_CANDIDATE:
+        console.log("❄️ Получен новый ICE-кандидат!");
         handleNewICECandidateMsg(msg);
         break;
       case MessageType.REMOTE_DESKTOP:
+        console.log("🖥 Запрос на удалённый рабочий стол!");
         handleRemoteDesktopRequest(msg);
         break;
       case MessageType.CLOSE_REMOTE_DESKTOP:
+        console.log("❌ Закрытие удалённого рабочего стола!");
         close();
         break;
     }
   };
+
 
   ws.onerror = (e: Event) => {
     console.log("conn error");
@@ -113,30 +121,35 @@ const handleNewICECandidateMsg = async (msg: Record<string, any>) => {
 };
 
 const handleRemoteDesktopRequest = async (msg: Record<string, any>) => {
+  console.log("📩 Запрос на удалённый рабочий стол получен:", msg);
+
   if (msg.msg != data.account.password) {
-    console.log("password error!");
+    console.log("❌ Ошибка пароля!");
     return;
   }
 
   data.receiverAccount.id = msg.sender;
 
+  console.log("✅ Инициализируем WebRTC соединение...");
+
   await initRTCPeerConnection();
 
   initRTCDataChannel();
 
-  // get local desktop
+  // Запрашиваем экран
   webcamStream = await navigator.mediaDevices.getDisplayMedia({
     video: true,
     audio: false,
   });
 
   webcamStream.getTracks().forEach((track: MediaStreamTrack) =>
-    // pc.addTransceiver(track, { streams: [webcamStream] })
-    pc.addTrack(track, webcamStream)
+      pc.addTrack(track, webcamStream)
   );
 
+  console.log("📤 Отправляем OFFER...");
   sendOffer();
 };
+
 
 // webrtc
 const initRTCPeerConnection = () => {
@@ -179,15 +192,15 @@ const handleICECandidateEvent = (event: RTCPeerConnectionIceEvent) => {
 };
 
 const handleICEConnectionStateChangeEvent = (event: Event) => {
-  console.log("*** ICE连接状态变为" + pc.iceConnectionState);
+  console.log("*** Состояние ICE-соединения изменилось на" + pc.iceConnectionState);
 };
 
 const handleICEGatheringStateChangeEvent = (event: Event) => {
-  console.log("*** ICE聚集状态变为" + pc.iceGatheringState);
+  console.log("*** Состояние сбора ICE-кандидатов изменилось на" + pc.iceGatheringState);
 };
 
 const handleSignalingStateChangeEvent = (event: Event) => {
-  console.log("*** WebRTC信令状态变为: " + pc.signalingState);
+  console.log("*** Состояние WebRTC-сигнализации изменилось на: " + pc.signalingState);
 };
 
 // get data stream
@@ -286,9 +299,10 @@ const sendOffer = async () => {
 // request
 const remoteDesktop = async () => {
   if (!data.receiverAccount.id || !data.receiverAccount.password) {
-    alert("请输入id和密码");
+    alert("Пожалуйста, введите ID и пароль"); // "Пожалуйста, введите ID и пароль"
     return;
   }
+
 
   appWindow.setFullscreen(true);
 
@@ -410,15 +424,15 @@ const sendToClient = (msg: Record<string, any>) => {
     </div>
   </div>
   <div class="form">
-    <input v-model="data.receiverAccount.id" type="text" placeholder="请输入对方id" />
-    <input v-model="data.receiverAccount.password" type="text" placeholder="请输入对方密码" />
-    <button @click="remoteDesktop()">发起远程</button>
+    <input v-model="data.receiverAccount.id" type="text" placeholder="Введите ID удалённого пользователя" />
+    <input v-model="data.receiverAccount.password" type="text" placeholder="Введите пароль удалённого пользователя" />
+    <button @click="remoteDesktop()">Начать удалённое подключение</button>
   </div>
   <video v-show="data.isShowRemoteDesktop" @mousedown="mouseDown($event)" @mouseup="mouseUp($event)"
     @mousemove="mouseMove($event)" @wheel="wheel($event)" @contextmenu.prevent="rightClick($event)" class="desktop"
     ref="desktop" autoplay></video>
   <button v-if="data.isShowRemoteDesktop" class="close-btn" @click="closeRemoteDesktop()">
-    关闭
+    Закрыть
   </button>
 </template>
 
@@ -496,7 +510,7 @@ button {
 }
 
 .close-btn {
-  width: 40px;
+  width: auto;
   height: 24px;
   position: fixed;
   right: 20px;

@@ -43,7 +43,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(server.clone()))
             .route("/conn/{account}", web::get().to(chat_route))
     })
-    .bind(("0.0.0.0", 6503))?
+    .bind(("0.0.0.0", 1108))?
     .run()
     .await
 }

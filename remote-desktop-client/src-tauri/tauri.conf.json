@@ -14,7 +14,7 @@
     "allowlist": {
       "all": true,
       "http": {
-        "scope": ["http://127.0.0.1:6503/*"]
+        "scope": ["http://127.0.0.1:1108/*"]
       }
     },
     "bundle": {

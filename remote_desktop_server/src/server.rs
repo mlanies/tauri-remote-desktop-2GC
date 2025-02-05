@@ -32,9 +32,14 @@ impl ChatServer {
                 println!("heartbeat");
             }
             _ => {
-                if let Some(addr) = self.sessions.get(&receiver) {
-                    addr.do_send(Message(message));
+                if let Some(addr) = self.sessions.get(&msg.receiver) {
+                    let json = serde_json::to_string(&msg).unwrap();
+                    println!("📤 [Сервер] Отправляем WebSocket сообщение: {}", json);
+                    addr.do_send(Message(json));
+                } else {
+                    println!("⚠️ [Сервер] Клиент {} не найден в sessions!", msg.receiver);
                 }
+
             }
         }
     }
@@ -61,11 +66,13 @@ impl Handler<Connect> for ChatServer {
     type Result = usize;
 
     fn handle(&mut self, msg: Connect, _: &mut Context<Self>) -> Self::Result {
-        let uuid = msg.uuid;
-        self.sessions.insert(uuid, msg.addr);
+        println!("✅ Клиент {} подключился и зарегистрирован", msg.uuid);
+        self.sessions.insert(msg.uuid.clone(), msg.addr);
+        println!("📌 Текущее количество клиентов: {}", self.sessions.len());
         0
     }
 }
+
 
 /// Session is disconnected
 #[derive(Message)]
